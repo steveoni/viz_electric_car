@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>D3: Pie layout pie chart</title>
+		<script type="text/javascript" src="d3.js"></script>
+		<style type="text/css">
+
+		</style>
+	</head>
+	<body>
+        <p>Monthly number of Electric vehicle sold in us from December 2010 to june 2013</p>
+		<script type="text/javascript">
+            
+            var w = 900;
+            var h = 500;
+            var pad = 30;
+
+            var outerRadius = Math.min(w,h)/2 - pad;
+            var innerRadius = Math.min(w, h) / 3 - pad;
+
+            var dataset,arc,pie,color;
+
+            var parseTime = d3.timeParse("%Y-%m");
+
+            //format how data into
+            //an object containing date and the numbers of car
+            //sold for each model
+            var rowConverter = function(d,i,cols){
+
+                var row = {
+                    date : parseTime(d.Date),
+                };
+
+                for(var i=1;i<cols.length;i++){
+
+                    var col = cols[i];
+
+                    if(d[cols[i]]){
+                        row[cols[i]] = +d[cols[i]];
+                    }
+                    else{
+                        row[cols[i]] = 0;
+                    }
+                }
+                return row;
+            }
+
+
+
+            //collect the csv data
+            d3.csv("ev_sales_data.csv",rowConverter,function(data){
+
+                var dataset = data;
+
+                var keys = dataset.columns;//the keys is the column i.e the csv header
+
+                keys.shift();//remove the date
+
+              
+                var newdata = [];//to store the new formatted data for pie chart
+                for(var i=0;i<keys.length;i++){
+                    var col = {};//store the value and the name
+                    for(var j=0;j<data.length;j++){
+                        var value = data[j][keys[i]];
+
+                        col['value'] = +value;
+
+                        for(var k in data[j]){
+                            if( k === keys[i]){
+                                
+                                col['name'] = k.split(' ')[0].substring(0, 1);
+                                                              
+                            }
+                        }
+
+                    }
+                    newdata.push(col);
+
+                }
+
+                //define the arc
+                arc = d3.arc()
+                        .innerRadius(innerRadius)
+                        .outerRadius(outerRadius);
+
+                pie = d3.pie()
+                        .value(function(d){
+                            return d.value;//use the value from the data has it value
+                        });
+
+                color = d3.scaleOrdinal(d3.schemeCategory10);//define color to be used
+
+                var svg = d3.select("body")
+                            .append("svg")
+                            .attr("width",w)
+                            .attr("height",h);
+
+                var arcs = svg.selectAll("g.arc")
+                                .data(pie(newdata))
+                                .enter()
+                                .append("g")
+                                .attr("class","arc")
+                                .attr("transform","translate("+w/2+","+h/2 +")");
+
+
+                arcs.append("path")
+                    .attr("fill",function(d,i){
+                
+                        return color(i);
+
+                    })
+                    .attr("d",arc);
+
+
+                arcs.append("text")
+                    .attr("transform",function(d){
+
+                        var c = arc.centroid(d);
+                        var x = c[0];
+                        var y = c[1];
+                        var h = Math.sqrt(x*x +y*y);
+
+                        return "translate(" + (x/h *(outerRadius +10)) + ',' + (y/h*(outerRadius+10)) + ")";
+                    })
+                    .attr("dy",".10em")
+                    .attr("text-anchor",function(d){
+                        return (d.endAngle + d.startAngle)/2> Math.PI ? "end":"start";
+                    })
+                    .text(function(d){
+                        return d.data.name;
+                    });
+
+                    //create a legend for the chart
+                    var f = h/2;
+                    for(var i=0;i<keys.length;i++){
+                        var gh = f - ((i+2) *15);
+                        var rect = svg.append("rect")
+                              .attr("x",w-100)
+                              .attr("y",gh)
+                              .attr("width",20)
+                              .attr("height",20)
+                              .attr("fill",color(i))
+
+                        svg.append("text")
+                            .attr("x", (w-80))
+                            .attr("y", gh+15)
+                            .text(function(){
+                                return keys[i];
+                            })
+                            .attr("font-size","11px")
+                            .attr("font-family", "sans-serif");
+
+                    }
+
+            });
+		</script>
+	</body>
+</html>
