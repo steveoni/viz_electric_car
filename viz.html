@@ -126,9 +126,6 @@
                     .attr("dy",".10em")
                     .attr("text-anchor",function(d){
                         return (d.endAngle + d.startAngle)/2> Math.PI ? "end":"start";
-                    })
-                    .text(function(d){
-                        return d.data.name;
                     });
 
                     //create a legend for the chart
